@@ -135,7 +135,7 @@ class Cache(DoublyLinkedList):
 
 Next step is to define methods to insert to the cache, access the cache and delete from the cache.
 
-Let's look at the insert method logic.  It takes a key and a value, for example HTTP request and response.  If the frequency node with frequency one does not exist, it is inserted at the beginning of the access frequency linked list.  An item node is added to the frequency node items linked list.  The key and value are added to the dictionary.  Complexity is O(1).
+Let's look at the insert method logic.  It takes a key and value, for example HTTP request and response.  If the frequency node with frequency one does not exist, it is inserted at the beginning of the access frequency linked list.  An item node is added to the frequency node items linked list.  The key and value are added to the dictionary.
 
 [code lang="python"]
 def insert(self, key, value):
@@ -153,7 +153,7 @@ We insert two elements in our cache, we end up with:
 
 <img src="/images/blog/lfu/insert.png" alt="LFU insert method.">
 
-Let's look at the access method logic.  If the key does not exist, we raise an exception.  If the key exists, we move the item node to the frequency node list with frequency + 1 (adding the frequency node if it does not exist).  Complexity is O(1).
+Let's look at the access method logic.  If the key does not exist, we raise an exception.  If the key exists, we move the item node to the frequency node list with frequency + 1 (adding the frequency node if it does not exist).
 
 [code lang="python"]
 def access(self, key):

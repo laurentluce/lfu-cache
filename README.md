@@ -27,3 +27,5 @@ Cache with LFU eviction scheme implemented in Python with complexity O(1) for in
 1: ['k3']
 2: ['k2']
 ```
+
+More details: http://www.laurentluce.com/posts/least-frequently-used-cache-eviction-scheme-with-complexity-o1-in-python
