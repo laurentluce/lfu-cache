@@ -10,12 +10,12 @@ Cache with LFU eviction scheme implemented in Python with complexity O(1) for in
 >>> cache.insert('k1', 'v1')
 >>> cache.insert('k2', 'v2')
 >>> cache.insert('k3', 'v3')
->>> cache.display_lists()
+>>> cache
 1: ['k1', 'k2', 'k3']
 
 >>> cache.access('k2')
 'v2'
->>> cache.display_lists()
+>>> cache
 1: ['k1', 'k3']
 2: ['k2']
 
@@ -23,7 +23,7 @@ Cache with LFU eviction scheme implemented in Python with complexity O(1) for in
 ('k1', 'v1')
 
 >>> cache.delete_lfu()
->>> cache.display_lists()
+>>> cache
 1: ['k3']
 2: ['k2']
 ```
