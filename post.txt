@@ -1,0 +1,211 @@
+This post describes the implementation in Python of a "Least Frequently Used" (LFU) algorithm cache eviction scheme with complexity O(1).  The algorithm is described in this <a href="https://github.com/papers-we-love/papers-we-love/blob/master/caching/a-constant-algorithm-for-implementing-the-lfu-cache-eviction-scheme.pdf">paper</a> written by Prof. Ketan Shah, Anirban Mitra and Dhruv Matani.  The naming in the implementation follows the naming in the paper.
+
+LFU cache eviction scheme is useful for an HTTP caching network proxy for example, where we want the least frequently used items to be removed from the cache.
+
+The goal here is for the LFU cache algorithm to have a runtime complexity of O(1) for all of its operations, which include insertion, access and deletion (eviction).
+
+Doubly linked lists are used in this algorithm.  One for the access frequency and each node in that list contains a list with the elements of same access frequency.  Let say we have five elements in our cache.  Two have been accessed one time and two have been accessed two times.  In that case, the access frequency list has two nodes (frequency = 1 and frequency = 2).  The first frequency node has two nodes in its list and the second frequency node has three nodes in its list.
+
+<img src="/images/blog/lfu/overview.png" alt="LFU doubly linked lists.">
+
+How do we build that?  The first object we need is a node:
+
+[code lang="python"]
+class Node(object):
+    """Node containing data, pointers to previous and next node."""
+    def __init__(self, data):
+        self.data = data
+        self.prev = None
+        self.next = None
+[/code]
+
+Next, our doubly linked list.  Each node has a prev and next attribute equal to the previous node and next node respectively.  The head is set to the first node and the tail to the last node.
+
+<img src="/images/blog/lfu/doubly_linked_list.png" alt="LFU doubly linked list.">
+
+We can define our doubly linked list with methods to add a node at the end of the list, insert a node, remove a node and get a list with the nodes data.
+
+[code lang="python"]
+class DoublyLinkedList(object):
+    def __init__(self):
+        self.head = None
+        self.tail = None
+        # Number of nodes in list.
+        self.count = 0
+
+    def add_node(self, cls, data):
+        """Add node instance of class cls."""
+        return self.insert_node(cls, data, self.tail, None)
+
+    def insert_node(self, cls, data, prev, next):
+        """Insert node instance of class cls."""
+        node = cls(data)
+        node.prev = prev
+        node.next = next
+        if prev:
+            prev.next = node
+        if next:
+            next.prev = node
+        if not self.head or next is self.head:
+            self.head = node
+        if not self.tail or prev is self.tail:
+            self.tail = node
+        self.count += 1
+        return node
+
+    def remove_node(self, node):
+        if node is self.tail:
+            self.tail = node.prev
+        else:
+            node.next.prev = node.prev
+        if node is self.head:
+            self.head = node.next
+        else:
+            node.prev.next = node.next
+        self.count -= 1
+
+    def get_nodes_data(self):
+        """Return list nodes data as a list."""
+        data = []
+        node = self.head
+        while node:
+            data.append(node.data)
+            node = node.next
+        return data
+[/code]
+
+Each node in the access frequency doubly linked list is a frequency node (Freq Node on the diagram below).  It is a node and also a doubly linked list containing the elements (Item nodes on the diagram below) of same frequency.  Each item node has a pointer to its frequency node parent.
+
+<img src="/images/blog/lfu/freq_item_lists.png" alt="LFU frequency and items doubly linked list.">
+
+[code lang="python"]
+class FreqNode(DoublyLinkedList, Node):
+    """Frequency node containing linked list of item nodes with
+       same frequency."""
+    def __init__(self, data):
+        DoublyLinkedList.__init__(self)
+        Node.__init__(self, data)
+
+    def add_item_node(self, data):
+        node = self.add_node(ItemNode, data)
+        node.parent = self
+        return node
+
+    def insert_item_node(self, data, prev, next):
+        node = self.insert_node(ItemNode, data, prev, next)
+        node.parent = self
+        return node
+
+    def remove_item_node(self, node):
+        self.remove_node(node)
+
+
+class ItemNode(Node):
+    def __init__(self, data):
+        Node.__init__(self, data)
+        self.parent = None
+[/code]
+
+The item node data is equal to the key of the element we are storing, an HTTP request could be the key.  The content itself (HTTP response for example) is stored in a dictionary.  Each value in this dictionary is of type LfuItem where "data" is the content cached, "parent" is a pointer to the frequency node and "node" is a pointer to the item node under the frequency node.
+
+<img src="/images/blog/lfu/lfu_item.png" alt="LFU Item.">
+
+[code lang="python"]
+class LfuItem(object):
+    def __init__(self, data, parent, node):
+        self.data = data
+        self.parent = parent
+        self.node = node
+[/code]
+
+We have defined our data objects classes, now we can define our cache object class.  It has a doubly linked list (access frequency list) and a dictionary to contain the LFU items (LfuItem above).  We defined two methods: one to insert a frequency node and one to remove a frequency node.
+
+[code lang="python"]
+class Cache(DoublyLinkedList):
+    def __init__(self):
+        DoublyLinkedList.__init__(self)
+        self.items = dict()
+
+    def insert_freq_node(self, data, prev, next):
+        return self.insert_node(FreqNode, data, prev, next)
+
+    def remove_freq_node(self, node):
+        self.remove_node(node)
+[/code]
+
+Next step is to define methods to insert to the cache, access the cache and delete from the cache.
+
+Let's look at the insert method logic.  It takes a key and a value, for example HTTP request and response.  If the frequency node with frequency one does not exist, it is inserted at the beginning of the access frequency linked list.  An item node is added to the frequency node items linked list.  The key and value are added to the dictionary.  Complexity is O(1).
+
+[code lang="python"]
+def insert(self, key, value):
+    if key in self.items:
+        raise DuplicateException('Key exists')
+    freq_node = self.head
+    if not freq_node or freq_node.data != 1:
+        freq_node = self.insert_freq_node(1, None, freq_node)
+
+    freq_node.add_item_node(key)
+    self.items[key] = LfuItem(value, freq_node)
+[/code]
+
+We insert two elements in our cache, we end up with:
+
+<img src="/images/blog/lfu/insert.png" alt="LFU insert method.">
+
+Let's look at the access method logic.  If the key does not exist, we raise an exception.  If the key exists, we move the item node to the frequency node list with frequency + 1 (adding the frequency node if it does not exist).  Complexity is O(1).
+
+[code lang="python"]
+def access(self, key):
+    try:
+        tmp = self.items[key]
+    except KeyError:
+        raise NotFoundException('Key not found')
+
+    freq_node = tmp.parent
+    next_freq_node = freq_node.next
+
+    if not next_freq_node or next_freq_node.data != freq_node.data + 1:
+        next_freq_node = self.insert_freq_node(freq_node.data + 1,
+            freq_node, next_freq_node)
+    item_node = next_freq_node.add_item_node(key)
+    tmp.parent = next_freq_node
+
+    freq_node.remove_item_node(tmp.node)
+    if freq_node.count == 0:
+        self.remove_freq_node(freq_node)
+
+    tmp.node = item_node
+    return tmp.data
+[/code]
+
+If we access the item with Key 1, the item node with data Key 1 is moved to the frequency node with frequency equal to 2.  We end up with:
+
+<img src="/images/blog/lfu/access.png" alt="LFU access method.">
+
+If we access the item with Key 2, the item node with data Key 2 is moved to the frequency node with frequency equal to 2.  The frequency node 1 is removed.  We end up with:
+
+<img src="/images/blog/lfu/access_2.png" alt="LFU access 2 method.">
+
+Let's look at the delete_lfu method.  It removes the least frequently used item from the cache.  To do that, it removes the first item node from the first frequency node and also the LFUItem object from the dictionary.  If after this operation, the frequency node list is empty, it is removed.
+
+[code lang="python"]
+def delete_lfu(self):
+    """Remove the first item node from the first frequency node.
+    Remove the item from the dictionary.
+    """
+    if not self.head:
+        raise NotFoundException('No frequency nodes found')
+    freq_node = self.head
+    item_node = freq_node.head
+    del self.items[item_node.data]
+    freq_node.remove_item_node(item_node)
+    if freq_node.count == 0:
+        self.remove_freq_node(freq_node)
+[/code]
+
+If we call delete_lfu on our cache, the item node with data equal to Key 1 is removed and its LFUItem too.  We end up with:
+
+<img src="/images/blog/lfu/delete_lfu.png" alt="LFU delete method.">
+
+<a href="https://github.com/laurentluce/lfu-cache">Github repo for the complete implementation.</a>
