@@ -5,5 +5,5 @@ setup(
     version='0.1',
     packages=['lfucache',],
     license='MIT',
-    long_description=open('README.md').read(),
+    long_description='Cache with LFU eviction scheme implemented in Python with complexity O(1) for insertion, access and deletion.',
 )

@@ -2,6 +2,7 @@ import unittest
 
 import lfucache.lfu_cache as lfu_cache
 
+
 class TestLfuCache(unittest.TestCase):
 
     def setUp(self):
@@ -30,16 +31,16 @@ class TestLfuCache(unittest.TestCase):
         freq_node1 = self.cache.insert_freq_node(1, None, None)
         freq_node2 = self.cache.insert_freq_node(2, freq_node1, None)
         freq_node1_item_node1 = freq_node1.insert_item_node('a', None, None)
-        freq_node1_item_node2 = freq_node1.insert_item_node('b',
-            freq_node1_item_node1, None)
+        freq_node1.insert_item_node('b', freq_node1_item_node1, None)
         freq_node2_item_node2 = freq_node2.insert_item_node('d', None, None)
-        freq_node2_item_node1 = freq_node2.insert_item_node('c', None,
+        freq_node2_item_node1 = freq_node2.insert_item_node(
+            'c', None,
             freq_node2_item_node2)
-        freq_node2_item_node4 = freq_node2.insert_item_node('f',
-            freq_node2_item_node2, None)
-        freq_node2_item_node3 = freq_node2.insert_item_node('e',
-            freq_node2_item_node2, freq_node2_item_node4)
-        freq_node2_item_node5 = freq_node2.add_item_node('g')
+        freq_node2_item_node4 = freq_node2.insert_item_node(
+            'f', freq_node2_item_node2, None)
+        freq_node2_item_node3 = freq_node2.insert_item_node(
+            'e', freq_node2_item_node2, freq_node2_item_node4)
+        freq_node2.add_item_node('g')
 
         nodes_data = freq_node1.get_nodes_data()
         self.assertEqual(nodes_data, ['a', 'b'])
@@ -65,7 +66,7 @@ class TestLfuCache(unittest.TestCase):
         self.cache.insert('k3', 'd3')
 
         nodes_data = self.cache.get_nodes_data()
-        self.assertEqual(nodes_data, [1,])
+        self.assertEqual(nodes_data, [1, ])
 
         nodes_data = self.cache.head.get_nodes_data()
         self.assertEqual(nodes_data, ['k1', 'k2', 'k3'])
@@ -76,14 +77,14 @@ class TestLfuCache(unittest.TestCase):
         self.assertEqual(self.cache.items['k2'].data, 'd2')
         self.assertEqual(self.cache.items['k2'].parent, self.cache.head)
         self.assertEqual(self.cache.items['k2'].node,
-            self.cache.head.head.next)
+                         self.cache.head.head.next)
         self.assertEqual(self.cache.items['k3'].data, 'd3')
         self.assertEqual(self.cache.items['k3'].parent, self.cache.head)
         self.assertEqual(self.cache.items['k3'].node,
-            self.cache.head.head.next.next)
+                         self.cache.head.head.next.next)
 
         self.assertRaises(lfu_cache.DuplicateException, self.cache.insert,
-            'k3', 'd3')
+                          'k3', 'd3')
 
     def test_access(self):
         self.cache.insert('k1', 'd1')
@@ -121,7 +122,7 @@ class TestLfuCache(unittest.TestCase):
 
     def test_get_lfu(self):
         self.assertRaises(lfu_cache.NotFoundException,
-            self.cache.get_lfu)
+                          self.cache.get_lfu)
 
         self.cache.insert('k1', 'd1')
         self.cache.insert('k2', 'd2')
@@ -139,7 +140,7 @@ class TestLfuCache(unittest.TestCase):
 
     def test_delete_lfu(self):
         self.assertRaises(lfu_cache.NotFoundException,
-            self.cache.delete_lfu)
+                          self.cache.delete_lfu)
 
         self.cache.insert('k1', 'd1')
         self.cache.insert('k2', 'd2')

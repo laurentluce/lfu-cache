@@ -1,5 +1,6 @@
 class Node(object):
     """Node containing data, pointers to previous and next node."""
+
     def __init__(self, data):
         self.data = data
         self.prev = None
@@ -15,10 +16,12 @@ class DoublyLinkedList(object):
 
     def add_node(self, cls, data):
         """Add node instance of class cls."""
+
         return self.insert_node(cls, data, self.tail, None)
 
     def insert_node(self, cls, data, prev, next):
         """Insert node instance of class cls."""
+
         node = cls(data)
         node.prev = prev
         node.next = next
@@ -46,6 +49,7 @@ class DoublyLinkedList(object):
 
     def remove_node_by_data(self, data):
         """Remove node which data is equal to data."""
+
         node = self.head
         while node:
             if node.data == data:
@@ -55,6 +59,7 @@ class DoublyLinkedList(object):
 
     def get_nodes_data(self):
         """Return list nodes data as a list."""
+
         data = []
         node = self.head
         while node:
@@ -64,8 +69,11 @@ class DoublyLinkedList(object):
 
 
 class FreqNode(DoublyLinkedList, Node):
-    """Frequency node containing linked list of item nodes with
-       same frequency."""
+    """Frequency node.
+
+    Frequency node contains a linked list of item nodes with same frequency.
+    """
+
     def __init__(self, data):
         DoublyLinkedList.__init__(self)
         Node.__init__(self, data)
@@ -122,7 +130,7 @@ class Cache(DoublyLinkedList):
 
         if not next_freq_node or next_freq_node.data != freq_node.data + 1:
             next_freq_node = self.insert_freq_node(freq_node.data + 1,
-                freq_node, next_freq_node)
+                                                   freq_node, next_freq_node)
         item_node = next_freq_node.add_item_node(key)
         tmp.parent = next_freq_node
 
@@ -150,6 +158,7 @@ class Cache(DoublyLinkedList):
 
     def delete_lfu(self):
         """Remove the first item node from the first frequency node.
+
         Remove the LFU item from the dictionary.
         """
         if not self.head:
@@ -162,8 +171,9 @@ class Cache(DoublyLinkedList):
             self.remove_freq_node(freq_node)
 
     def __repr__(self):
-        """Display access frequency list and items list using the
-        representation:
+        """Display access frequency list and items.
+
+        Using the representation:
         freq1: [item, item, ...]
         freq2: [item, item]
         ...
@@ -179,6 +189,6 @@ class Cache(DoublyLinkedList):
 class DuplicateException(Exception):
     pass
 
+
 class NotFoundException(Exception):
     pass
-
