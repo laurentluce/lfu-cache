@@ -8,6 +8,7 @@ LFUCache
 Cache with LFU eviction scheme implemented in Python with complexity O(1) for insertion, access and deletion.
 
 .. code-block:: python
+
   >>> import lfucache.lfu_cache as lfu_cache
 
   >>> cache = lfu_cache.Cache()
